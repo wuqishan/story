@@ -17,6 +17,42 @@ class StoryItem(scrapy.Item):
     image = scrapy.Field()          # 图片地址
     url = scrapy.Field()            # 小说url
 
+    unique_code = scrapy.Field()    # 辅助字段
+    created_at = scrapy.Field()     # 辅助字段
+    updated_at = scrapy.Field()     # 辅助字段
+
+    def get_insert_sql(self):
+        """
+        插入数据的sql
+        """
+        insert_sql = """
+        insert into bqg_book(unique_code, title, author, last_update, description, image, url, created_at, updated_at) 
+        values 
+        (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+
+        insert_params = (
+            self['unique_code'], self['title'], self['author'], self['last_update'], self['description'], self['image'],
+            self['url'], self['created_at'], self['updated_at'],
+        )
+        return insert_sql, insert_params
+
+    def get_check_sql(self):
+        """
+        查询一条数据的sql，用于检查
+        """
+        check_sql = "select id, finished from bqg_book where unique_code = %s"
+        check_params = (self['unique_code'])
+
+        return check_sql, check_params
+
+    def get_update_sql(self):
+        """
+        更新最近更新时间的sql
+        """
+        update_sql = "update bqg_book set last_update = %s, updated_at = %s where unique_code = %s"
+        update_params = (self['last_update'], self['updated_at'], self['unique_code'])
+
+        return update_sql, update_params
 
 class StoryDetailItem(scrapy.Item):
     title = scrapy.Field()          # 标题

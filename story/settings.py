@@ -66,9 +66,10 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
+
+# ITEM_PIPELINES = {
 #    'story.pipelines.StoryPipeline': 300,
-#}
+# }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -90,3 +91,17 @@ DEFAULT_REQUEST_HEADERS = {
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+MYSQL_HOST = "127.0.0.1"
+MYSQL_DBNAME = "scrapy"
+MYSQL_USER = "root"
+MYSQL_PASSWORD = "wuqishan"
+
+# mail setting
+MAIL_FROM = '13262693729@163.com'
+MAIL_HOST = 'smtp.163.com'
+MAIL_PORT = 25
+MAIL_USER = '13262693729@163.com'
+MAIL_PASS = 'wuqishan163'
+MAIL_TLS = False
+MAIL_SSL = False

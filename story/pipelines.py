@@ -8,7 +8,6 @@
 from twisted.enterprise import adbapi
 import pymysql
 import pymysql.cursors
-import hashlib
 
 
 class StoryPipeline(object):
@@ -26,21 +25,27 @@ class StoryPipeline(object):
 
     def process_item(self, item, spider):
         # 使用twisted将mysql插入变成异步执行
-        self.dbpool.runInteraction(self.do_insert, item)
+        self.dbpool.runInteraction(self.db_logic, item)
+
+        # yield item
 
     def close_spider(self, spider):
         pass
 
-    def do_insert(self, cursor, item):
-        insert_sql, params = item.get_insert_sql()
-        cursor.execute(insert_sql, params)
+    def db_logic(self, cursor, item):
+        '''
+        数据库更新逻辑
+        '''
+        check_sql, check_params = item.get_check_sql()
+        cursor.execute(check_sql, check_params)
+        results = cursor.fetchone()
 
-
-def get_md5(string):
-    m = hashlib.md5()
-    m.update(string.encode("utf8"))
-    return m.hexdigest()
-
-
-def dict_trim(my_dict):
-    pass
+        # 如果不存在该记录 or 该本书还未完本
+        if results is None or results['finished'] != 0:
+            # 如果不存在该记录则插入，如果存在该记录则更新最近更新时间
+            if results is None:
+                insert_sql, insert_params = item.get_insert_sql()
+                cursor.execute(insert_sql, insert_params)
+            else:
+                update_sql, update_params = item.get_update_sql()
+                cursor.execute(update_sql, update_params)

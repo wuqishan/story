@@ -81,17 +81,31 @@ class StoryPipeline(object):
 
 
 class StoryDetailPipeline(object):
-    def __init__(self, dbpool):
-        self.dbpool = dbpool
+    def __init__(self, connect, cursor):
+        self.connect = connect
+        self.cursor = cursor
 
     @classmethod
     def from_settings(cls, settings):
-        dbpool = adbapi.ConnectionPool("pymysql", host=settings["MYSQL_HOST"], db=settings["MYSQL_DBNAME"],
-                                       user=settings["MYSQL_USER"], password=settings["MYSQL_PASSWORD"],
-                                       charset="utf8mb4",
-                                       cursorclass=pymysql.cursors.DictCursor,
-                                       use_unicode=True)
-        return cls(dbpool)
+        config = {
+            "host": settings["MYSQL_HOST"],
+            "port": 3306,
+            "database": settings["MYSQL_DBNAME"],
+            "user": settings["MYSQL_USER"],
+            "password": settings["MYSQL_PASSWORD"],
+            "charset": "utf8mb4",
+            "cursorclass": pymysql.cursors.DictCursor,
+            "use_unicode": True
+        }
+        connect = pymysql.connect(**config)
+        cursor = connect.cursor()
+        # dbpool = adbapi.ConnectionPool("pymysql", host=settings["MYSQL_HOST"], db=settings["MYSQL_DBNAME"],
+        #                                user=settings["MYSQL_USER"], password=settings["MYSQL_PASSWORD"],
+        #                                charset="utf8mb4",
+        #                                cursorclass=pymysql.cursors.DictCursor,
+        #                                use_unicode=True)
+
+        return cls(cursor, cursor)
 
     def process_item(self, item, spider):
 
@@ -99,24 +113,31 @@ class StoryDetailPipeline(object):
             raise DropItem("Missing title|content|url in {}".format(item))
         else:
             # 使用twisted将mysql插入变成异步执行
-            self.dbpool.runInteraction(self.db_logic, item)
+            self.db_logic(item)
 
-    def db_logic(self, cursor, item):
+    def db_logic(self, item):
         '''
         数据库更新逻辑
         '''
+        self.connect.ping()
         check_sql, check_params = item.get_check_sql()
-        cursor.execute(check_sql, check_params)
-        results = cursor.fetchone()
+        self.cursor.execute(check_sql, check_params)
+        results = self.cursor.fetchone()
 
         # 如果不存在该记录则插入，如果存在该记录则更新最近更新时间
         if results is None:
             insert_sql, insert_params = item.get_insert_sql()
-            cursor.execute(insert_sql, insert_params)
+            self.cursor.execute(insert_sql, insert_params)
+            self.connect.commit()
+
+                # self.cursor.execute(insert_sql, insert_params)
+                # self.connect.commit()
+
+    def close_spider(self, spider):
+        self.connect.close()
 
 
 class ImagesDownloadPipeline(ImagesPipeline):
-
     def get_media_requests(self, item, info):
         yield scrapy.Request(item['image_origin_url'])
 

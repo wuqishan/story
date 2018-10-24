@@ -23,13 +23,13 @@ ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
-CONCURRENT_REQUESTS = 16
+# CONCURRENT_REQUESTS = 16
 
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 #DOWNLOAD_DELAY = 3
-DOWNLOAD_DELAY = 1
+# DOWNLOAD_DELAY = 1
 
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
@@ -98,16 +98,16 @@ DEFAULT_REQUEST_HEADERS = {
 MYSQL_HOST = "127.0.0.1"
 MYSQL_DBNAME = "scrapy"
 MYSQL_USER = "root"
-MYSQL_PASSWORD = "wuqishan"
+MYSQL_PASSWORD = "xxx"
 
 # mail setting
-MAIL_FROM = '13262693729@163.com'
+MAIL_FROM = 'xxx@163.com'
 MAIL_HOST = 'smtp.163.com'
 MAIL_PORT = 25
-MAIL_USER = '13262693729@163.com'
-MAIL_PASS = 'wuqishan163'
+MAIL_USER = 'xxx@163.com'
+MAIL_PASS = ''
 MAIL_TLS = False
 MAIL_SSL = False
 
-LOG_LEVEL = 'WARNING'    # 日志级别
+# LOG_LEVEL = 'WARNING'    # 日志级别
 IMAGES_STORE = './images/'

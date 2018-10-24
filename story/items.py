@@ -18,9 +18,11 @@ class StoryItem(scrapy.Item):
     image_origin_url = scrapy.Field()  # 图片地址
     url = scrapy.Field()  # 小说url
 
-    unique_code = scrapy.Field()  # 辅助字段
-    created_at = scrapy.Field()  # 辅助字段
-    updated_at = scrapy.Field()  # 辅助字段
+    category_id = scrapy.Field()  # 小说分类
+    author_id = scrapy.Field()  # 作者
+    unique_code = scrapy.Field()  # 唯一标志码
+    created_at = scrapy.Field()  # 创建时间
+    updated_at = scrapy.Field()  # 更新时间
 
     def get_insert_sql(self):
         """
@@ -28,14 +30,15 @@ class StoryItem(scrapy.Item):
         """
         insert_sql = """
         insert into bqg_book(unique_code, title, author, last_update, 
-        description, image_local_url, image_origin_url, url, created_at, updated_at) 
-        values 
-        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+        description, image_local_url, image_origin_url, url, category_id, author_id, created_at, updated_at)
+        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
 
         insert_params = (
             self['unique_code'], self['title'], self['author'], self['last_update'], self['description'],
-            self['image_local_url'], self['image_origin_url'], self['url'], self['created_at'], self['updated_at'],
+            self['image_local_url'], self['image_origin_url'], self['url'], self['category_id'], self['author_id'],
+            self['created_at'], self['updated_at']
         )
+
         return insert_sql, insert_params
 
     def get_check_sql(self):
@@ -56,6 +59,24 @@ class StoryItem(scrapy.Item):
 
         return update_sql, update_params
 
+    def get_author_sql(self):
+        """
+        查询一条数据作者的sql
+        """
+        author_sql = "select id from bqg_author where name = %s"
+        author_params = (self['author'])
+
+        return author_sql, author_params
+
+    def get_insert_author_sql(self):
+        """
+        插入作者数据的sql
+        """
+        insert_author_sql = "insert into bqg_author(name) values (%s)"
+        insert_author_params = (self['author'])
+
+        return insert_author_sql, insert_author_params
+
 
 class StoryDetailItem(scrapy.Item):
     title = scrapy.Field()  # 标题
@@ -64,8 +85,9 @@ class StoryDetailItem(scrapy.Item):
 
     book_unique_code = scrapy.Field()  # 章节所属书的唯一码
     unique_code = scrapy.Field()  # 本章节唯一码
-    prev_unique_code = scrapy.Field()  # 上一页章节唯一吗
-    next_unique_code = scrapy.Field()  # 下一页章节唯一吗
+    prev_unique_code = scrapy.Field()  # 上一页章节唯一码
+    next_unique_code = scrapy.Field()  # 下一页章节唯一码
+    orderby = scrapy.Field()  # 章节排序
     created_at = scrapy.Field()  # 创建时间
     updated_at = scrapy.Field()  # 更新时间
 
@@ -75,13 +97,13 @@ class StoryDetailItem(scrapy.Item):
         """
         insert_sql = """
         insert into bqg_chapter(book_unique_code, unique_code, prev_unique_code, next_unique_code, 
-        title, content, view, created_at, updated_at) 
+        title, content, view, orderby, created_at, updated_at)
         values 
-        (%s, %s, %s, %s, %s, %s, 0, %s, %s)"""
+        (%s, %s, %s, %s, %s, %s, 0, %s, %s, %s)"""
 
         insert_params = (
             self['book_unique_code'], self['unique_code'], self['prev_unique_code'], self['next_unique_code'],
-            self['title'], self['content'], self['created_at'], self['updated_at'],
+            self['title'], self['content'], self['orderby'], self['created_at'], self['updated_at'],
         )
         return insert_sql, insert_params
 

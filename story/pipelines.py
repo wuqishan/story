@@ -20,6 +20,18 @@ class StoryPipeline(object):
 
     @classmethod
     def from_settings(cls, settings):
+        # config = {
+        #     "host": settings["MYSQL_HOST"],
+        #     "port": 3306,
+        #     "database": settings["MYSQL_DBNAME"],
+        #     "user": settings["MYSQL_USER"],
+        #     "password": settings["MYSQL_PASSWORD"],
+        #     "charset": "utf8mb4",
+        #     "cursorclass": pymysql.cursors.DictCursor,
+        #     "use_unicode": True
+        # }
+        # self.conn = pymysql.connect(**config)
+        # conn.ping()
         dbpool = adbapi.ConnectionPool("pymysql", host=settings["MYSQL_HOST"], db=settings["MYSQL_DBNAME"],
                                        user=settings["MYSQL_USER"], password=settings["MYSQL_PASSWORD"],
                                        charset="utf8mb4",
@@ -50,6 +62,17 @@ class StoryPipeline(object):
         if results is None or results['finished'] != 0:
             # 如果不存在该记录则插入，如果存在该记录则更新最近更新时间
             if results is None:
+                author_sql, author_params = item.get_author_sql()
+                cursor.execute(author_sql, author_params)
+                author = cursor.fetchone()
+                if author is None:
+                    insert_author_sql, insert_author_params = item.get_insert_author_sql()
+                    cursor.execute(insert_author_sql, insert_author_params)
+                    cursor.execute(author_sql, author_params)
+                    author = cursor.fetchone()
+
+                item['author_id'] = author['id']
+                item['description'] = "abc"
                 insert_sql, insert_params = item.get_insert_sql()
                 cursor.execute(insert_sql, insert_params)
             else:
@@ -90,9 +113,6 @@ class StoryDetailPipeline(object):
         if results is None:
             insert_sql, insert_params = item.get_insert_sql()
             cursor.execute(insert_sql, insert_params)
-        else:
-            update_sql, update_params = item.get_update_sql()
-            cursor.execute(update_sql, update_params)
 
 
 class ImagesDownloadPipeline(ImagesPipeline):
@@ -103,7 +123,8 @@ class ImagesDownloadPipeline(ImagesPipeline):
     def item_completed(self, results, item, info):
         image_paths = [x['path'] for ok, x in results if ok]
         if not image_paths:
-            raise DropItem("Item contains no images")
-        item['image_local_url'] = IMAGES_STORE + image_paths[0]
+            item['image_local_url'] = ''
+        else:
+            item['image_local_url'] = IMAGES_STORE + image_paths[0]
 
         return item

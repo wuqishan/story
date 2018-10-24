@@ -5,19 +5,18 @@ import re
 import hashlib
 import datetime
 
-
 class BiqugeSpider(scrapy.Spider):
     name = 'biquge_detail'
     allowed_domains = ['www.biquge.com.tw']
 
     start_urls = [
         'http://www.biquge.com.tw/xuanhuan/',
-        'http://www.biquge.com.tw/xiuzhen/',
-        'http://www.biquge.com.tw/dushi/',
-        'http://www.biquge.com.tw/lishi/',
-        'http://www.biquge.com.tw/wangyou/',
-        'http://www.biquge.com.tw/kehuan/',
-        'http://www.biquge.com.tw/kongbu/'
+        # 'http://www.biquge.com.tw/xiuzhen/',
+        # 'http://www.biquge.com.tw/dushi/',
+        # 'http://www.biquge.com.tw/lishi/',
+        # 'http://www.biquge.com.tw/wangyou/',
+        # 'http://www.biquge.com.tw/kehuan/',
+        # 'http://www.biquge.com.tw/kongbu/'
     ]
 
     custom_settings = {
@@ -36,18 +35,18 @@ class BiqugeSpider(scrapy.Spider):
                 yield scrapy.Request(url, callback=self.parse_chapter)
 
         # 最近更新列表
-        docs2 = response.xpath('//div[@id="newscontent"]/div[@class="l"]/ul/li')
-        if len(docs2) > 0:
-            for doc in docs2:
-                url = doc.xpath('./span[@class="s2"]/a/@href').extract_first().strip()
-                yield scrapy.Request(url, callback=self.parse_chapter)
+        # docs2 = response.xpath('//div[@id="newscontent"]/div[@class="l"]/ul/li')
+        # if len(docs2) > 0:
+        #     for doc in docs2:
+        #         url = doc.xpath('./span[@class="s2"]/a/@href').extract_first().strip()
+        #         yield scrapy.Request(url, callback=self.parse_chapter)
 
         # 右侧好看的xx小说
-        docs3 = response.xpath('//div[@id="newscontent"]/div[@class="r"]/ul/li')
-        if len(docs3) > 0:
-            for doc in docs3:
-                url = doc.xpath('./span[@class="s2"]/a/@href').extract_first().strip()
-                yield scrapy.Request(url, callback=self.parse_chapter)
+        # docs3 = response.xpath('//div[@id="newscontent"]/div[@class="r"]/ul/li')
+        # if len(docs3) > 0:
+        #     for doc in docs3:
+        #         url = doc.xpath('./span[@class="s2"]/a/@href').extract_first().strip()
+        #         yield scrapy.Request(url, callback=self.parse_chapter)
 
     def parse_chapter(self, response):
 
@@ -65,22 +64,25 @@ class BiqugeSpider(scrapy.Spider):
                 item['url'] = response.urljoin(item['url'])
                 item['book_unique_code'] = self.get_md5(book_author + book_title)
                 item['unique_code'] = self.get_md5(book_author + book_title + item['title'])
-                if i == 0 and (len(docs) - 1) > 1:
+                item['orderby'] = i
+
+                if i == 0 and len(docs) == 1:
+                    item['prev_unique_code'] = ''
+                    item['next_unique_code'] = ''
+                elif i == 0 and len(docs) > 1:
                     item['prev_unique_code'] = ''
                     next_title = docs[i + 1].xpath('./a/text()').extract_first().strip()
                     item['next_unique_code'] = self.get_md5(book_author + book_title + next_title)
-                elif i == (len(docs) - 1) and (len(docs) - 1) > 1:
+                elif i == len(docs) - 1:
                     prev_title = docs[i - 1].xpath('./a/text()').extract_first().strip()
                     item['prev_unique_code'] = self.get_md5(book_author + book_title + prev_title)
-                    item['next_unique_code'] = ''
-                elif len(docs) == 1:
-                    item['prev_unique_code'] = ''
                     item['next_unique_code'] = ''
                 else:
                     next_title = docs[i + 1].xpath('./a/text()').extract_first().strip()
                     prev_title = docs[i - 1].xpath('./a/text()').extract_first().strip()
                     item['next_unique_code'] = self.get_md5(book_author + book_title + next_title)
                     item['prev_unique_code'] = self.get_md5(book_author + book_title + prev_title)
+
                 item['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 item['updated_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 

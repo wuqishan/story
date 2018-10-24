@@ -1,19 +1,29 @@
 /*
 Navicat MySQL Data Transfer
 
-Source Server         : vagrant
-Source Server Version : 50639
-Source Host           : localhost:3306
+Source Server         : 47.98.143.79
+Source Server Version : 50722
+Source Host           : 47.98.143.79:3306
 Source Database       : scrapy
 
 Target Server Type    : MYSQL
-Target Server Version : 50639
+Target Server Version : 50722
 File Encoding         : 65001
 
-Date: 2018-10-24 17:59:45
+Date: 2018-10-24 22:12:05
 */
 
 SET FOREIGN_KEY_CHECKS=0;
+
+-- ----------------------------
+-- Table structure for bqg_author
+-- ----------------------------
+DROP TABLE IF EXISTS `bqg_author`;
+CREATE TABLE `bqg_author` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
 -- Table structure for bqg_book
@@ -30,10 +40,22 @@ CREATE TABLE `bqg_book` (
   `image_origin_url` varchar(128) DEFAULT NULL,
   `url` varchar(128) DEFAULT NULL,
   `finished` tinyint(2) DEFAULT '0',
+  `category_id` tinyint(4) DEFAULT NULL,
+  `author_id` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=752 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- Table structure for bqg_category
+-- ----------------------------
+DROP TABLE IF EXISTS `bqg_category`;
+CREATE TABLE `bqg_category` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
 -- Table structure for bqg_chapter
@@ -49,7 +71,8 @@ CREATE TABLE `bqg_chapter` (
   `content` text,
   `view` int(11) unsigned DEFAULT NULL,
   `url` varchar(128) DEFAULT NULL,
+  `orderby` int(11) DEFAULT '0',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8mb4;

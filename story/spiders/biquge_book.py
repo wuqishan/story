@@ -8,11 +8,21 @@ import hashlib
 class BiqugeSpider(scrapy.Spider):
     name = 'biquge'
     allowed_domains = ['www.biquge.com.tw']
-    start_urls = ['http://www.biquge.com.tw/xuanhuan/']
+    start_urls = [
+        'http://www.biquge.com.tw/xuanhuan/',
+        # 'http://www.biquge.com.tw/xiuzhen/',
+        # 'http://www.biquge.com.tw/dushi/',
+        # 'http://www.biquge.com.tw/lishi/',
+        # 'http://www.biquge.com.tw/wangyou/',
+        # 'http://www.biquge.com.tw/kehuan/',
+        # 'http://www.biquge.com.tw/kongbu/'
+    ]
 
     custom_settings = {
         'ITEM_PIPELINES': {
-            'story.pipelines.StoryPipeline': 300
+            # 'scrapy.pipelines.images.ImagesPipeline': 200,
+            'story.pipelines.ImagesDownloadPipeline': 5,
+            'story.pipelines.StoryPipeline': 300,
         }
     }
 
@@ -60,16 +70,17 @@ class BiqugeSpider(scrapy.Spider):
         else:
             item['description'] = ""
 
-        item['image'] = response.xpath('//div[@id="fmimg"]/img/@src').extract()
-        if item['image']:
-            item['image'] = response.urljoin(item['image'][0].strip())
+        item['image_origin_url'] = response.xpath('//div[@id="fmimg"]/img/@src').extract()
+        if item['image_origin_url']:
+            item['image_origin_url'] = response.urljoin(item['image_origin_url'][0].strip())
         else:
-            item['image'] = ""
+            item['image_origin_url'] = ''
 
         # 处理item
-        item['author'] = re.sub(r'作(\s|(&nbsp;))*?者(：|\:)', '', item['author'], flags=re.I)
+        item['image_local_url'] = ''
+        item['author'] = re.sub(r'作(\s|(&nbsp;))*?者(：|\:)', '', item['author'])
         item['last_update'] = re.sub(r'[\u4E00-\u9FA5]*(：|\:)', '', item['last_update'], flags=re.I)
-        item['unique_code'] = self.get_md5(item['title'] + item['author'])
+        item['unique_code'] = self.get_md5(item['author'] + item['title'])
         item['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         item['updated_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 

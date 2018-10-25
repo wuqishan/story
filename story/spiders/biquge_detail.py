@@ -21,14 +21,14 @@ class BiqugeSpider(scrapy.Spider):
     }
 
     def start_requests(self):
-        # start_urls = self.get_start_urls()
-        start_urls = [{'url': 'http://www.biquge.com.tw/20_20022/'}]
+        start_urls = self.get_start_urls()
+        # start_urls = [{'url': 'http://www.biquge.com.tw/20_20022/'}]
         if start_urls:
             for val in start_urls:
                 yield scrapy.Request(val['url'], callback=self.parse_chapter)
 
     def get_start_urls(self):
-        sql = "select url from bqg_book where finished = 0 and id = 1"
+        sql = "select url from bqg_book where finished = 0"
         resutls = mysql_helper.get_instance().get_all(sql)
 
         return resutls
@@ -40,8 +40,8 @@ class BiqugeSpider(scrapy.Spider):
         book_author = response.xpath('//div[@id="info"]/p[1]/text()').extract_first().strip()
         book_author = re.sub(r'作(\s|(&nbsp;))*?者(：|\:)', '', book_author)
 
+        run_at = None
         if len(docs) > 0:
-
             for i, doc in enumerate(docs):
                 item = StoryDetailItem()
                 item['title'] = doc.xpath('./a/text()').extract_first().strip()
@@ -71,9 +71,15 @@ class BiqugeSpider(scrapy.Spider):
                 item['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 item['updated_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-                # 如果已经有了则不做处理
-                if self.check_has(item):
+                # run_at 函数每个url只执行一次，后面就更具orderby进行跳过了
+                if run_at is None:
+                    run_at = self.run_at(item)
+                elif run_at > i:
                     continue
+
+                # 如果已经有了则不做处理
+                # if self.check_has(item):
+                #     continue
 
                 yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
 
@@ -98,3 +104,18 @@ class BiqugeSpider(scrapy.Spider):
                 mysql_helper.get_instance().update(update_sql, update_params)
 
         return status
+
+    # 获取从哪里开始继续抓取
+    def run_at(self, item):
+        orderby = 0
+        sql = "select id from bqg_chapter order by orderby desc where book_unique_code = %s limit 1"
+        params = item['book_unique_code']
+        result = mysql_helper.get_instance().get_one(sql, params)
+        if result:
+            orderby = result['orderby']
+            if item['next_unique_code'] != "":
+                update_sql = "update bqg_chapter set next_unique_code = %s where unique_code = %s"
+                update_params = (item['next_unique_code'], item['unique_code'])
+                mysql_helper.get_instance().update(update_sql, update_params)
+
+        return orderby

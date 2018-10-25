@@ -39,22 +39,22 @@ class BiqugeSpider(scrapy.Spider):
                 yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
 
         # 最近更新列表
-        # docs2 = response.xpath('//div[@id="newscontent"]/div[@class="l"]/ul/li')
-        # if len(docs2) > 0:
-        #     for doc in docs2:
-        #         item = StoryItem()
-        #         item['category_id'] = self.start_urls.index(response.url)
-        #         item['url'] = doc.xpath('./span[@class="s2"]/a/@href').extract_first()
-        #         yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
+        docs2 = response.xpath('//div[@id="newscontent"]/div[@class="l"]/ul/li')
+        if len(docs2) > 0:
+            for doc in docs2:
+                item = StoryItem()
+                item['category_id'] = self.start_urls.index(response.url)
+                item['url'] = doc.xpath('./span[@class="s2"]/a/@href').extract_first()
+                yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
 
         # 右侧好看的xx小说
-        # docs3 = response.xpath('//div[@id="newscontent"]/div[@class="r"]/ul/li')
-        # if len(docs3) > 0:
-        #     for doc in docs3:
-        #         item = StoryItem()
-        #         item['category_id'] = self.start_urls.index(response.url)
-        #         item['url'] = doc.xpath('./span[@class="s2"]/a/@href').extract_first()
-        #         yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
+        docs3 = response.xpath('//div[@id="newscontent"]/div[@class="r"]/ul/li')
+        if len(docs3) > 0:
+            for doc in docs3:
+                item = StoryItem()
+                item['category_id'] = self.start_urls.index(response.url)
+                item['url'] = doc.xpath('./span[@class="s2"]/a/@href').extract_first()
+                yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
 
     def parse_detail(self, response):
 

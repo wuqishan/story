@@ -91,24 +91,24 @@ class BiqugeSpider(scrapy.Spider):
         yield item
 
     # 如果当前章节没有入库并且有上一章记录,则更新上条记录的 next_unique_code 值，并返回False，否则返回True
-    def check_has(self, item):
-        status = True
-        sql = "select id from bqg_chapter where unique_code = %s"
-        params = item['unique_code']
-        result = mysql_helper.get_instance().get_one(sql, params)
-        if result is None:
-            status = False
-            if item['prev_unique_code'] != "":
-                update_sql = "update bqg_chapter set next_unique_code = %s where unique_code = %s"
-                update_params = (item['unique_code'], item['prev_unique_code'])
-                mysql_helper.get_instance().update(update_sql, update_params)
-
-        return status
+    # def check_has(self, item):
+    #     status = True
+    #     sql = "select id from bqg_chapter where unique_code = %s"
+    #     params = item['unique_code']
+    #     result = mysql_helper.get_instance().get_one(sql, params)
+    #     if result is None:
+    #         status = False
+    #         if item['prev_unique_code'] != "":
+    #             update_sql = "update bqg_chapter set next_unique_code = %s where unique_code = %s"
+    #             update_params = (item['unique_code'], item['prev_unique_code'])
+    #             mysql_helper.get_instance().update(update_sql, update_params)
+    #
+    #     return status
 
     # 获取从哪里开始继续抓取
     def run_at(self, item):
         orderby = 0
-        sql = "select id from bqg_chapter order by orderby desc where book_unique_code = %s limit 1"
+        sql = "select id, orderby from bqg_chapter where book_unique_code = %s order by `orderby` desc limit 1"
         params = item['book_unique_code']
         result = mysql_helper.get_instance().get_one(sql, params)
         if result:

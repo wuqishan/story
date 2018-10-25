@@ -9,7 +9,7 @@ from story.tools import *
 
 class BiqugeSpider(scrapy.Spider):
     name = 'biquge_detail'
-    allowed_domains = ['www.biquge.com.tw']
+    allowed_domains = ['www.xbiquge6.com']
 
     # 在方法 get_start_urls 从数据库中取
     start_urls = []

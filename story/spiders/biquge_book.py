@@ -8,16 +8,15 @@ from story.mysql import mysql_helper
 
 class BiqugeSpider(scrapy.Spider):
     name = 'biquge'
-    allowed_domains = ['www.biquge.com.tw']
+    allowed_domains = ['www.xbiquge6.com']
     start_urls = [
-        'http://www.biquge.com.tw/xuanhuan/',
-        'http://www.biquge.com.tw/xiuzhen/',
-        'http://www.biquge.com.tw/dushi/',
-        'http://www.biquge.com.tw/lishi/',
-        'http://www.biquge.com.tw/wangyou/',
-        'http://www.biquge.com.tw/kehuan/',
-        'http://www.biquge.com.tw/kongbu/',
-        'http://www.biquge.com.tw/quanben/',
+        'https://www.xbiquge6.com/xclass/1/1.html',
+        'https://www.xbiquge6.com/xclass/2/1.html',
+        'https://www.xbiquge6.com/xclass/3/1.html',
+        'https://www.xbiquge6.com/xclass/4/1.html',
+        'https://www.xbiquge6.com/xclass/5/1.html',
+        'https://www.xbiquge6.com/xclass/6/1.html',
+        'https://www.xbiquge6.com/xclass/7/1.html'
     ]
 
     custom_settings = {
@@ -36,6 +35,7 @@ class BiqugeSpider(scrapy.Spider):
                 item = StoryItem()
                 item['category_id'] = self.start_urls.index(response.url)
                 item['url'] = doc.xpath('./div[@class="image"]/a/@href').extract_first()
+                item['url'] = response.urljoin(item['url'].strip())
                 yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
 
         # 最近更新列表
@@ -45,6 +45,7 @@ class BiqugeSpider(scrapy.Spider):
                 item = StoryItem()
                 item['category_id'] = self.start_urls.index(response.url)
                 item['url'] = doc.xpath('./span[@class="s2"]/a/@href').extract_first()
+                item['url'] = response.urljoin(item['url'].strip())
                 yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
 
         # 右侧好看的xx小说
@@ -54,6 +55,7 @@ class BiqugeSpider(scrapy.Spider):
                 item = StoryItem()
                 item['category_id'] = self.start_urls.index(response.url)
                 item['url'] = doc.xpath('./span[@class="s2"]/a/@href').extract_first()
+                item['url'] = response.urljoin(item['url'].strip())
                 yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
 
     def parse_detail(self, response):
@@ -68,7 +70,7 @@ class BiqugeSpider(scrapy.Spider):
         else:
             item['last_update'] = ""
 
-        item['description'] = response.xpath('//div[@id="maininfo"]/div[@id="intro"]/p/text()').extract()
+        item['description'] = response.xpath('//div[@id="maininfo"]/div[@id="intro"]/p[1]').extract()
         if item['description']:
             item['description'] = item['description'][0].strip()
         else:
@@ -84,7 +86,7 @@ class BiqugeSpider(scrapy.Spider):
         item['image_local_url'] = ''
         item['author'] = re.sub(r'作(\s|(&nbsp;))*?者(：|\:)', '', item['author'])
         item['author_id'] = self.get_author_id(item['author'])
-        item['last_update'] = re.sub(r'[\u4E00-\u9FA5]*(：|\:)', '', item['last_update'], flags=re.I)
+        item['last_update'] = re.sub(r'[\u4E00-\u9FA5]*?：', '', item['last_update'], flags=re.I)
         item['unique_code'] = get_md5(item['author'] + item['title'])
         item['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         item['updated_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')

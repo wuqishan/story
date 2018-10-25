@@ -3,7 +3,8 @@ import scrapy
 from story.items import StoryItem
 import datetime
 import re
-import hashlib
+from story.tools import *
+from story.mysql import mysql_helper
 
 class BiqugeSpider(scrapy.Spider):
     name = 'biquge'
@@ -11,15 +12,13 @@ class BiqugeSpider(scrapy.Spider):
     start_urls = [
         'http://www.biquge.com.tw/xuanhuan/',
         'http://www.biquge.com.tw/xiuzhen/',
-        # 'http://www.biquge.com.tw/dushi/',
-        # 'http://www.biquge.com.tw/lishi/',
-        # 'http://www.biquge.com.tw/wangyou/',
-        # 'http://www.biquge.com.tw/kehuan/',
-        # 'http://www.biquge.com.tw/kongbu/',
-        # 'http://www.biquge.com.tw/quanben/',
+        'http://www.biquge.com.tw/dushi/',
+        'http://www.biquge.com.tw/lishi/',
+        'http://www.biquge.com.tw/wangyou/',
+        'http://www.biquge.com.tw/kehuan/',
+        'http://www.biquge.com.tw/kongbu/',
+        'http://www.biquge.com.tw/quanben/',
     ]
-
-
 
     custom_settings = {
         'ITEM_PIPELINES': {
@@ -82,17 +81,26 @@ class BiqugeSpider(scrapy.Spider):
             item['image_origin_url'] = ''
 
         # 处理item
-        item['author_id'] = 0
         item['image_local_url'] = ''
         item['author'] = re.sub(r'作(\s|(&nbsp;))*?者(：|\:)', '', item['author'])
+        item['author_id'] = self.get_author_id(item['author'])
         item['last_update'] = re.sub(r'[\u4E00-\u9FA5]*(：|\:)', '', item['last_update'], flags=re.I)
-        item['unique_code'] = self.get_md5(item['author'] + item['title'])
+        item['unique_code'] = get_md5(item['author'] + item['title'])
         item['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         item['updated_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         yield item
 
-    def get_md5(self, string):
-        m = hashlib.md5()
-        m.update(string.encode("utf8"))
-        return m.hexdigest()
+    # 获取作者id
+    def get_author_id(self, author_name):
+        author_sql = "select id from bqg_author where name = %s"
+        author_params = author_name
+        results = mysql_helper.get_instance().get_one(author_sql, author_params)
+
+        if results is None:
+            insert_author_sql = "insert into bqg_author(name) values (%s)"
+            insert_author_params = author_name
+            mysql_helper.get_instance().insert(insert_author_sql, insert_author_params)
+            results = mysql_helper.get_instance().get_one(author_sql, author_params)
+
+        return results['id']

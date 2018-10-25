@@ -2,22 +2,17 @@
 import scrapy
 from story.items import StoryDetailItem
 import re
-import hashlib
 import datetime
+from story.mysql import mysql_helper
+from story.tools import *
+
 
 class BiqugeSpider(scrapy.Spider):
     name = 'biquge_detail'
     allowed_domains = ['www.biquge.com.tw']
 
-    start_urls = [
-        'http://www.biquge.com.tw/xuanhuan/',
-        # 'http://www.biquge.com.tw/xiuzhen/',
-        # 'http://www.biquge.com.tw/dushi/',
-        # 'http://www.biquge.com.tw/lishi/',
-        # 'http://www.biquge.com.tw/wangyou/',
-        # 'http://www.biquge.com.tw/kehuan/',
-        # 'http://www.biquge.com.tw/kongbu/'
-    ]
+    # 在方法 get_start_urls 从数据库中取
+    start_urls = []
 
     custom_settings = {
         'ITEM_PIPELINES': {
@@ -25,28 +20,18 @@ class BiqugeSpider(scrapy.Spider):
         }
     }
 
-    # 这里先获取每一本书的url，然后根据每一本书的url去获取章节信息
-    def parse(self, response):
-        # 顶部六篇
-        docs = response.xpath('//div[@id="hotcontent"]/div[@class="ll"]/div[@class="item"]')
-        if len(docs) > 0:
-            for doc in docs:
-                url = doc.xpath('./div[@class="image"]/a/@href').extract_first().strip()
-                yield scrapy.Request(url, callback=self.parse_chapter)
+    def start_requests(self):
+        # start_urls = self.get_start_urls()
+        start_urls = [{'url': 'http://www.biquge.com.tw/20_20022/'}]
+        if start_urls:
+            for val in start_urls:
+                yield scrapy.Request(val['url'], callback=self.parse_chapter)
 
-        # 最近更新列表
-        # docs2 = response.xpath('//div[@id="newscontent"]/div[@class="l"]/ul/li')
-        # if len(docs2) > 0:
-        #     for doc in docs2:
-        #         url = doc.xpath('./span[@class="s2"]/a/@href').extract_first().strip()
-        #         yield scrapy.Request(url, callback=self.parse_chapter)
+    def get_start_urls(self):
+        sql = "select url from bqg_book where finished = 0 and id = 1"
+        resutls = mysql_helper.get_instance().get_all(sql)
 
-        # 右侧好看的xx小说
-        # docs3 = response.xpath('//div[@id="newscontent"]/div[@class="r"]/ul/li')
-        # if len(docs3) > 0:
-        #     for doc in docs3:
-        #         url = doc.xpath('./span[@class="s2"]/a/@href').extract_first().strip()
-        #         yield scrapy.Request(url, callback=self.parse_chapter)
+        return resutls
 
     def parse_chapter(self, response):
 
@@ -62,8 +47,8 @@ class BiqugeSpider(scrapy.Spider):
                 item['title'] = doc.xpath('./a/text()').extract_first().strip()
                 item['url'] = doc.xpath('./a/@href').extract_first()
                 item['url'] = response.urljoin(item['url'])
-                item['book_unique_code'] = self.get_md5(book_author + book_title)
-                item['unique_code'] = self.get_md5(book_author + book_title + item['title'])
+                item['book_unique_code'] = get_md5(book_author + book_title)
+                item['unique_code'] = get_md5(book_author + book_title + item['title'])
                 item['orderby'] = i
 
                 if i == 0 and len(docs) == 1:
@@ -72,19 +57,23 @@ class BiqugeSpider(scrapy.Spider):
                 elif i == 0 and len(docs) > 1:
                     item['prev_unique_code'] = ''
                     next_title = docs[i + 1].xpath('./a/text()').extract_first().strip()
-                    item['next_unique_code'] = self.get_md5(book_author + book_title + next_title)
+                    item['next_unique_code'] = get_md5(book_author + book_title + next_title)
                 elif i == len(docs) - 1:
                     prev_title = docs[i - 1].xpath('./a/text()').extract_first().strip()
-                    item['prev_unique_code'] = self.get_md5(book_author + book_title + prev_title)
+                    item['prev_unique_code'] = get_md5(book_author + book_title + prev_title)
                     item['next_unique_code'] = ''
                 else:
                     next_title = docs[i + 1].xpath('./a/text()').extract_first().strip()
                     prev_title = docs[i - 1].xpath('./a/text()').extract_first().strip()
-                    item['next_unique_code'] = self.get_md5(book_author + book_title + next_title)
-                    item['prev_unique_code'] = self.get_md5(book_author + book_title + prev_title)
+                    item['next_unique_code'] = get_md5(book_author + book_title + next_title)
+                    item['prev_unique_code'] = get_md5(book_author + book_title + prev_title)
 
                 item['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 item['updated_at'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+                # 如果已经有了则不做处理
+                if self.check_has(item):
+                    continue
 
                 yield scrapy.Request(item['url'], meta={'item': item}, callback=self.parse_detail)
 
@@ -95,7 +84,17 @@ class BiqugeSpider(scrapy.Spider):
 
         yield item
 
-    def get_md5(self, string):
-        m = hashlib.md5()
-        m.update(string.encode("utf8"))
-        return m.hexdigest()
+    # 如果当前章节没有入库并且有上一章记录,则更新上条记录的 next_unique_code 值，并返回False，否则返回True
+    def check_has(self, item):
+        status = True
+        sql = "select id from bqg_chapter where unique_code = %s"
+        params = item['unique_code']
+        result = mysql_helper.get_instance().get_one(sql, params)
+        if result is None:
+            status = False
+            if item['prev_unique_code'] != "":
+                update_sql = "update bqg_chapter set next_unique_code = %s where unique_code = %s"
+                update_params = (item['unique_code'], item['prev_unique_code'])
+                mysql_helper.get_instance().update(update_sql, update_params)
+
+        return status

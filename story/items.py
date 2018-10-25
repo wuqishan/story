@@ -59,24 +59,6 @@ class StoryItem(scrapy.Item):
 
         return update_sql, update_params
 
-    def get_author_sql(self):
-        """
-        查询一条数据作者的sql
-        """
-        author_sql = "select id from bqg_author where name = %s"
-        author_params = (self['author'])
-
-        return author_sql, author_params
-
-    def get_insert_author_sql(self):
-        """
-        插入作者数据的sql
-        """
-        insert_author_sql = "insert into bqg_author(name) values (%s)"
-        insert_author_params = (self['author'])
-
-        return insert_author_sql, insert_author_params
-
 
 class StoryDetailItem(scrapy.Item):
     title = scrapy.Field()  # 标题
@@ -97,30 +79,12 @@ class StoryDetailItem(scrapy.Item):
         """
         insert_sql = """
         insert into bqg_chapter(book_unique_code, unique_code, prev_unique_code, next_unique_code, 
-        title, content, view, orderby, created_at, updated_at)
+        title, content, view, url, orderby, created_at, updated_at)
         values 
-        (%s, %s, %s, %s, %s, %s, 0, %s, %s, %s)"""
+        (%s, %s, %s, %s, %s, %s, 0, %s, %s, %s, %s)"""
 
         insert_params = (
             self['book_unique_code'], self['unique_code'], self['prev_unique_code'], self['next_unique_code'],
-            self['title'], self['content'], self['orderby'], self['created_at'], self['updated_at'],
+            self['title'], self['content'], self['url'], self['orderby'], self['created_at'], self['updated_at'],
         )
         return insert_sql, insert_params
-
-    def get_check_sql(self):
-        """
-        查询一条数据的sql，用于检查
-        """
-        check_sql = "select id from bqg_chapter where unique_code = %s"
-        check_params = (self['unique_code'])
-
-        return check_sql, check_params
-
-    def get_update_sql(self):
-        """
-        更新最近更新时间的sql
-        """
-        update_sql = "update bqg_chapter set updated_at = %s where unique_code = %s"
-        update_params = (self['updated_at'], self['unique_code'])
-
-        return update_sql, update_params
